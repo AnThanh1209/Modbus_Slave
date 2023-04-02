@@ -1,0 +1,28 @@
+--cpu=Cortex-M4.fp.sp
+"mymodbus_slave_rev01\startup_stm32f407xx.o"
+"mymodbus_slave_rev01\modbus_crc.o"
+"mymodbus_slave_rev01\modbusslave.o"
+"mymodbus_slave_rev01\main.o"
+"mymodbus_slave_rev01\stm32f4xx_it.o"
+"mymodbus_slave_rev01\stm32f4xx_hal_msp.o"
+"mymodbus_slave_rev01\stm32f4xx_hal_tim.o"
+"mymodbus_slave_rev01\stm32f4xx_hal_tim_ex.o"
+"mymodbus_slave_rev01\stm32f4xx_hal_uart.o"
+"mymodbus_slave_rev01\stm32f4xx_hal_rcc.o"
+"mymodbus_slave_rev01\stm32f4xx_hal_rcc_ex.o"
+"mymodbus_slave_rev01\stm32f4xx_hal_flash.o"
+"mymodbus_slave_rev01\stm32f4xx_hal_flash_ex.o"
+"mymodbus_slave_rev01\stm32f4xx_hal_flash_ramfunc.o"
+"mymodbus_slave_rev01\stm32f4xx_hal_gpio.o"
+"mymodbus_slave_rev01\stm32f4xx_hal_dma_ex.o"
+"mymodbus_slave_rev01\stm32f4xx_hal_dma.o"
+"mymodbus_slave_rev01\stm32f4xx_hal_pwr.o"
+"mymodbus_slave_rev01\stm32f4xx_hal_pwr_ex.o"
+"mymodbus_slave_rev01\stm32f4xx_hal_cortex.o"
+"mymodbus_slave_rev01\stm32f4xx_hal.o"
+"mymodbus_slave_rev01\stm32f4xx_hal_exti.o"
+"mymodbus_slave_rev01\system_stm32f4xx_1.o"
+--strict --scatter "MyModbus_Slave_Rev01\MyModbus_Slave_Rev01.sct"
+--summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list "MyModbus_Slave_Rev01.map" -o MyModbus_Slave_Rev01\MyModbus_Slave_Rev01.axf
