@@ -1,5 +1,4 @@
-//TEST
-//TestBranch1
+//Branch 1
 
 #include "main.h"
 #include "modbusSlave.h"
@@ -12,11 +11,13 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 
 
-uint8_t RxData[50];
-uint8_t TxData[50];
+uint8_t RxData[256];
+uint8_t TxData[256];
+uint8_t Index = 0;
 
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
+	
 	if (RxData[0] == SLAVE_ID)
 	{
 		switch (RxData[1]){
