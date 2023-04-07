@@ -17,7 +17,7 @@ uint8_t TxData[256];
 volatile uint8_t Index = 0;
 volatile uint8_t Rx_Flag = 0;
 uint32_t Rx_Time = 0;
-uint8_t other_function[10] = {7,11,12,13,14,15,16,17,20,21};
+uint8_t other_function[10] = {7,11,12,13,14,17,20,21};
 
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
