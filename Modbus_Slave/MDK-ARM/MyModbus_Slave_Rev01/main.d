@@ -31,3 +31,4 @@ mymodbus_slave_rev01\main.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_p
 mymodbus_slave_rev01\main.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h
 mymodbus_slave_rev01\main.o: ../Core/Inc/modbusSlave.h
 mymodbus_slave_rev01\main.o: ../Core/Inc/modbus_crc.h
+mymodbus_slave_rev01\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h

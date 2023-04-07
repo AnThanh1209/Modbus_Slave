@@ -7,7 +7,6 @@ extern uint8_t RxData[50];
 extern uint8_t TxData[50];
 extern UART_HandleTypeDef huart2;
 
-
 void sendData (uint8_t *data, int size)
 {
 	// we will calculate the CRC in this function itself
@@ -18,11 +17,39 @@ void sendData (uint8_t *data, int size)
 	HAL_UART_Transmit(&huart2, data, size+2, 1000);
 }
 
+void modbus_exception (uint8_t exceptionCode)
+{
+	//| SLAVE_ID | FUNCTION_CODE | EXCEPTION CODE | CRC
+	//| 1 BYTE   |  1 BYTE       |  1 BYTE        | 2 BYTES 
+	TxData[0] = SLAVE_ID;  // slave ID
+	TxData[1] = RxData[1];  // function code
+	TxData[2] = exceptionCode; //load exception
+	sendData(TxData, 3);
+}
+
+void modbus_other (uint8_t otherFunction)
+{
+	//| SLAVE_ID | FUNCTION_CODE | EXCEPTION CODE | CRC
+	//| 1 BYTE   |  1 BYTE       |  1 BYTE        | 2 BYTES 
+	TxData[0] = SLAVE_ID;  // slave ID
+	TxData[1] = RxData[1];  // function code
+	TxData[2] = otherFunction; //load other function
+	sendData(TxData, 3);
+}
+
 uint8_t readCoils (void) //Case 0x01
 {
 	uint16_t startAddr = ((RxData[2]<<8)|RxData[3]);  // start Coils Address
 
 	uint16_t numCoils = ((RxData[4]<<8)|RxData[5]);   // number to coils master has requested
+	if (numCoils > 2000) {
+		modbus_exception(ILLEGAL_DATA_VALUE);
+		return 0;
+	}
+	
+	if (startAddr + numCoils - 1 > CoilSize*8) {
+		modbus_exception(ILLEGAL_DATA_ADDRESS);
+	}	
 	
 	memset (TxData, '\0', 256);
 	
@@ -72,7 +99,15 @@ uint8_t readDiscreteInputs (void) //Case 0x02
 	uint16_t startAddr = ((RxData[2]<<8)|RxData[3]);  // start Inputs Address
 
 	uint16_t numInputs = ((RxData[4]<<8)|RxData[5]);   // number to Inputs master has requested
-
+	if (numInputs > 2000) {
+		modbus_exception(ILLEGAL_DATA_VALUE);
+		return 0;
+	}
+	
+	if (startAddr + numInputs - 1 > InputSize*8) {
+		modbus_exception(ILLEGAL_DATA_ADDRESS);
+	}	
+	
 	memset (TxData, '\0', 256);
 	
 	// Prepare TxData buffer
@@ -114,7 +149,15 @@ uint8_t readHoldingRegs (void) //Case 0x03
 {
 	uint16_t startAddr = ((RxData[2]<<8)|RxData[3]);  // start Register Address
 	uint16_t numRegs = ((RxData[4]<<8)|RxData[5]);    // number to registers master has requested
-
+	if (numRegs > 125) {
+		modbus_exception(ILLEGAL_DATA_VALUE);
+		return 0;
+	}
+	
+	if (startAddr + numRegs - 1 > RegSize) {
+		modbus_exception(ILLEGAL_DATA_ADDRESS);
+	}	
+	
 	// Prepare TxData buffer
 
 	//| SLAVE_ID | FUNCTION_CODE | BYTE COUNT | DATA      | CRC     |
@@ -141,7 +184,14 @@ uint8_t readInputRegs (void) //Case 0x04
 	uint16_t startAddr = ((RxData[2]<<8)|RxData[3]); 
 
 	uint16_t numRegs = ((RxData[4]<<8)|RxData[5]); 
-
+	if (numRegs > 125) {
+		modbus_exception(ILLEGAL_DATA_VALUE);
+		return 0;
+	}
+	
+	if (startAddr + numRegs - 1 > RegSize) {
+		modbus_exception(ILLEGAL_DATA_ADDRESS);
+	}	
 	// Prepare TxData buffer
 
 	//| SLAVE_ID | FUNCTION_CODE | BYTE COUNT | DATA      | CRC     |
@@ -167,6 +217,10 @@ uint8_t writeSingleCoil (void) //Case 0x05
 {
 	uint16_t startAddr = ((RxData[2]<<8)|RxData[3]);  // start Coil Address
 
+	if (startAddr + 1 > CoilSize*8) {
+		modbus_exception(ILLEGAL_DATA_ADDRESS);
+	}	
+	
 	int startByte = startAddr/8;
 	uint16_t bitPosition = startAddr%8;
 	
@@ -199,6 +253,10 @@ uint8_t writeSingleReg (void) //Case 0x06
 {
 	uint16_t startAddr = ((RxData[2]<<8)|RxData[3]);  // start Register Address
 
+	if (startAddr + 1 > RegSize) {
+		modbus_exception(ILLEGAL_DATA_ADDRESS);
+	}	
+	
 	Holding_Registers_Database[startAddr]  = ((RxData[4]<<8)|RxData[5]);  
 	
 	// Prepare TxData buffer
@@ -222,7 +280,14 @@ uint8_t writeMultiCoils (void) //Case 0x15
 	uint16_t startAddr = ((RxData[2]<<8)|RxData[3]);  // start Register Address
 
 	uint16_t numCoils = (RxData[4]<<8)|RxData[5];
-
+	if (numCoils > 800){
+		modbus_exception(ILLEGAL_DATA_VALUE);
+	}
+	
+	if (startAddr + numCoils - 1 > CoilSize*8){
+		modbus_exception(ILLEGAL_DATA_ADDRESS);
+	}	
+	
 	int startByte = startAddr/8;
 	uint16_t bitPosition = startAddr%8;
 	int indxPosition = 0;
@@ -275,7 +340,14 @@ uint8_t writeMultiRegs (void) //Case 0x16
 	uint16_t startAddr = ((RxData[2]<<8)|RxData[3]);  // start Register Address
 
 	uint16_t numRegs = (RxData[4]<<8)|RxData[5];
-
+	if (numRegs > 100){
+		modbus_exception(ILLEGAL_DATA_VALUE);
+	}
+	
+	if (startAddr + numRegs - 1 > RegSize){
+		modbus_exception(ILLEGAL_DATA_ADDRESS);
+	}	
+	
 	int indx = 7; 
 	for (int i=0; i<numRegs; i++)
 	{

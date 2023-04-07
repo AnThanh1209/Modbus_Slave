@@ -3,6 +3,7 @@
 #include "main.h"
 #include "modbusSlave.h"
 #include "stm32f4xx_hal.h"
+#include <stdio.h>
 
 UART_HandleTypeDef huart2;
 
@@ -10,46 +11,33 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 
-
+#define TIMEOUT 0.25f // (1000/(115200/10))*1.5*1.9
 uint8_t RxData[256];
 uint8_t TxData[256];
-uint8_t Index = 0;
+volatile uint8_t Index = 0;
+volatile uint8_t Rx_Flag = 0;
+uint32_t Rx_Time = 0;
+uint8_t other_function[10] = {7,11,12,13,14,15,16,17,20,21};
+
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
+	RxData[Index++] = huart->Instance->DR;
+	Rx_Time = HAL_GetTick(); 
 	
-	if (RxData[0] == SLAVE_ID)
+	if (HAL_GetTick() - Rx_Time > TIMEOUT) //Exceed timeout
 	{
-		switch (RxData[1]){
-		case 0x01:
-			readCoils();
-		case 0x02:
-			readDiscreteInputs();
-		case 0x03:
-			readHoldingRegs();
-			break;
-		case 0x04:
-			readInputRegs();
-			break;
-		case 0x05:
-			writeSingleCoil();
-			break;
-		case 0x06:
-			writeSingleReg();
-			break;
-		case 0x0F:
-			writeMultiCoils();
-			break;
-		case 0x10:
-			writeMultiRegs();
-			break;
-		default:
-			break;
-		}
+		Rx_Flag = 1; //Set flag
 	}
+	
+	if (Index > 255) //buffer overflow
+	{
+		Index = 0; //Reset buffer
+	}
+	
+	HAL_UART_Receive_IT(&huart2, RxData, 1);
+}	
 
-	HAL_UARTEx_ReceiveToIdle_IT(&huart2, RxData, 50);
-}
 
 int main(void)
 {
@@ -57,13 +45,53 @@ int main(void)
   SystemClock_Config();
   MX_GPIO_Init();
   MX_USART2_UART_Init();
-	
-	HAL_UARTEx_ReceiveToIdle_IT(&huart2, RxData, 50);
+
+	HAL_UART_Receive_IT(&huart2, RxData, 1);
 
   while (1)
   {
-
-  }
+		if (Rx_Flag){
+			if (RxData[0] == SLAVE_ID){
+				switch (RxData[1]){
+				case 0x01:
+					readCoils();
+					break;
+				case 0x02:
+					readDiscreteInputs();
+					break;
+				case 0x03:
+					readHoldingRegs();
+					break;
+				case 0x04:
+					readInputRegs();
+					break;
+				case 0x05:
+					writeSingleCoil();
+					break;
+				case 0x06:
+					writeSingleReg();
+					break;
+				case 0x0F:
+					writeMultiCoils();
+					break;
+				case 0x10:
+					writeMultiRegs();
+					break;
+				default:
+					for (int i=0;i<sizeof(other_function);i++){
+						if (RxData[1] == other_function[i]){
+							modbus_other(OTHER_FUNCTION);
+							break;
+						}
+						else modbus_exception(ILLEGAL_FUNCTION);
+							break; }			
+					}
+			Rx_Flag = 0;
+			Index = 0;
+			HAL_UART_Receive_IT(&huart2, RxData, 1);
+			}
+		}
+	}
 }
 
 void SystemClock_Config(void)
